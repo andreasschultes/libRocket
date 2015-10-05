@@ -201,7 +201,7 @@ ElementDocument* Context::CreateDocument(const String& tag)
 	ElementDocument* document = rocket_dynamic_cast< ElementDocument* >(element);
 	if (document == NULL)
 	{
-		Log::Message(Log::LT_ERROR, "Failed to instance document on tag '%s', Found type '%s', was expecting derivative of ElementDocument.", tag.CString(), typeid(element).name());
+		Log::Message(Log::LT_ERROR, "Failed to instance document on tag '%s', Found type '%s', was expecting derivative of ElementDocument.", tag.CString(), "Not Supported" /*typeid(element).name()*/);
 
 		element->RemoveReference();
 		return NULL;
