@@ -277,10 +277,10 @@ bool Factory::InstanceElementText(Element* parent, const String& text)
 		}
 
 		// Assign the element its text value.
-		ElementText* text_element = dynamic_cast< ElementText* >(element);
+		ElementText* text_element = rocket_dynamic_cast< ElementText* >(element);
 		if (text_element == NULL)
 		{
-			Log::Message(Log::LT_ERROR, "Failed to instance text element '%s'. Found type '%s', was expecting a derivative of ElementText.", translated_data.CString(), typeid(element).name());
+			Log::Message(Log::LT_ERROR, "Failed to instance text element '%s'. Found type '%s', was expecting a derivative of ElementText.", translated_data.CString(),"Not Supported" /*typeid(element).name()*/);
 			element->RemoveReference();
 			return false;
 		}
@@ -313,10 +313,10 @@ ElementDocument* Factory::InstanceDocumentStream(Rocket::Core::Context* context,
 		return NULL;
 	}
 
-	ElementDocument* document = dynamic_cast< ElementDocument* >(element);
+	ElementDocument* document = rocket_dynamic_cast< ElementDocument* >(element);
 	if (!document)
 	{
-		Log::Message(Log::LT_ERROR, "Failed to instance document element. Found type '%s', was expecting derivative of ElementDocument.", typeid(element).name());
+		Log::Message(Log::LT_ERROR, "Failed to instance document element. Found type '%s', was expecting derivative of ElementDocument.","Not Supported"/* typeid(element).name()*/);
 		return NULL;
 	}
 
