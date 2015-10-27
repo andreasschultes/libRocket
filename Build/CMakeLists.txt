@@ -188,7 +188,7 @@ ENDIF(WIN32)
 #===================================
 # Find dependencies ================
 #===================================
-
+if(NOT EMSCRIPTEN)
 # FreeType
 if(CMAKE_MAJOR_VERSION LESS 3)
 	# Freetype changed the layout of its header files, we  need to use 
@@ -204,6 +204,8 @@ if(FREETYPE_FOUND)
 		list(APPEND CORE_LINK_LIBS ${FREETYPE_LIBRARY})
 endif()
 mark_as_advanced(FREETYPE_INCLUDE_DIRS FREETYPE_LIBRARY FREETYPE_LINK_DIRECTORIES)
+
+endif(NOT EMSCRIPTEN)
 
 # Boost and Python
 if(BUILD_PYTHON_BINDINGS)
