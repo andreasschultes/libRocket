@@ -41,9 +41,9 @@
 	#endif
 #elif defined (ROCKET_PLATFORM_LINUX)
 	#if defined __GNUC__
-		#define ROCKET_BREAK {__builtin_trap();}
+		#define ROCKET_BREAK {std::abort();}
 	#else
-		#define ROCKET_BREAK
+		#define ROCKET_BREAK {std::abort();}
 	#endif
 #elif defined (ROCKET_PLATFORM_MACOSX)
 	#define ROCKET_BREAK {__builtin_trap();}
