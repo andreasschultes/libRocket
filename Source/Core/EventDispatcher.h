@@ -1,9 +1,10 @@
 /*
- * This source file is part of libRocket, the HTML/CSS Interface Middleware
+ * This source file is part of RmlUi, the HTML/CSS Interface Middleware
  *
- * For the latest information, see http://www.librocket.com
+ * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
+ * Copyright (c) 2019 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,21 +26,29 @@
  *
  */
 
-#ifndef ROCKETCOREEVENTDISPATCHER_H
-#define ROCKETCOREEVENTDISPATCHER_H
+#ifndef RMLUICOREEVENTDISPATCHER_H
+#define RMLUICOREEVENTDISPATCHER_H
 
-#include "../../Include/Rocket/Core/String.h"
-#include "../../Include/Rocket/Core/Event.h"
-#include <map>
+#include "../../Include/RmlUi/Core/Types.h"
+#include "../../Include/RmlUi/Core/Event.h"
 
-namespace Rocket {
+namespace Rml {
 namespace Core {
 
 class Element;
 class EventListener;
+struct CollectedListener;
+
+struct EventListenerEntry {
+	EventListenerEntry(EventId id, EventListener* listener, bool in_capture_phase) : id(id), in_capture_phase(in_capture_phase), listener(listener) {}
+	EventId id;
+	bool in_capture_phase;
+	EventListener* listener;
+};
+
 
 /**
-	The Event Dispatcher manages a list of event listeners (based on URL) and triggers the events via EventHandlers
+	The Event Dispatcher manages a list of event listeners and triggers the events via EventHandlers
 	whenever requested.
 
 	@author Lloyd Weehuizen
@@ -52,47 +61,52 @@ public:
 	/// @param element Element this dispatcher acts on
 	EventDispatcher(Element* element);
 
-	// Destructor
+	/// Destructor
 	~EventDispatcher();
 
 	/// Attaches a new listener to the specified event name
 	/// @param[in] type Type of the event to attach to
 	/// @param[in] event_listener The event listener to be notified when the event fires
 	/// @param[in] in_capture_phase Should the listener be notified in the capture phase
-	void AttachEvent(const String& type, EventListener* event_listener, bool in_capture_phase);
+	void AttachEvent(EventId id, EventListener* event_listener, bool in_capture_phase);
 
 	/// Detaches a listener from the specified event name
 	/// @param[in] type Type of the event to attach to
 	/// @para[in]m event_listener The event listener to be notified when the event fires
 	/// @param[in] in_capture_phase Should the listener be notified in the capture phase
-	void DetachEvent(const String& type, EventListener* listener, bool in_capture_phase);
+	void DetachEvent(EventId id, EventListener* listener, bool in_capture_phase);
 
 	/// Detaches all events from this dispatcher and all child dispatchers.
 	void DetachAllEvents();
 
-	/// Dispatches the specified event with element as the target
-	/// @param[in] target_element The target element of the event
-	/// @param[in] name The name of the event
+	/// Dispatches the specified event.
+	/// @param[in] target_element The element to target
+	/// @param[in] id The id of the event
+	/// @param[in] type The type of the event
 	/// @param[in] parameters The event parameters
 	/// @param[in] interruptible Can the event propagation be stopped
+	/// @param[in] bubbles True if the event should execute the bubble phase
+	/// @param[in] default_action_phase The phases to execute default actions in
 	/// @return True if the event was not consumed (ie, was prevented from propagating by an element), false if it was.
-	bool DispatchEvent(Element* element, const String& name, const Dictionary& parameters, bool interruptible);
+	static bool DispatchEvent(Element* target_element, EventId id, const String& type, const Dictionary& parameters, bool interruptible, bool bubbles, DefaultActionPhase default_action_phase);
+
+	/// Returns event types with number of listeners for debugging.
+	/// @return Summary of attached listeners.
+	String ToString() const;
 
 private:
 	Element* element;
 
-	struct Listener
-	{
-		Listener(EventListener* _listener, bool _in_capture_phase) : listener(_listener), in_capture_phase(_in_capture_phase) {}
-		EventListener* listener;
-		bool in_capture_phase;
-	};
-	typedef std::vector< Listener > Listeners;
-	typedef std::map< String, Listeners > Events;
-	Events events;
+	// Listeners are sorted first by (id, phase) and then by the order in which the listener was inserted.
+	// All listeners added are unique.
+	typedef std::vector< EventListenerEntry > Listeners;
+	Listeners listeners;
 
-	void TriggerEvents(Event* event);
+	// Collect all the listeners from this dispatcher that are allowed to execute given the input arguments.
+	void CollectListeners(int dom_distance_from_target, EventId event_id, EventPhase phases_to_execute, std::vector<CollectedListener>& collect_listeners);
 };
+
+
 
 }
 }

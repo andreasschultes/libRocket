@@ -1,9 +1,10 @@
 /*
- * This source file is part of libRocket, the HTML/CSS Interface Middleware
+ * This source file is part of RmlUi, the HTML/CSS Interface Middleware
  *
- * For the latest information, see http://www.librocket.com
+ * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
+ * Copyright (c) 2019 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,40 +29,70 @@
 #include "precompiled.h"
 #include "FontEffectShadow.h"
 
-namespace Rocket {
+namespace Rml {
 namespace Core {
 
 FontEffectShadow::FontEffectShadow() : offset(0, 0)
 {
-	// Default the z-index of a shadow effect to be behind the main layer.
-	SetZIndex(-1);
+	SetLayer(Layer::Back);
 }
 
 FontEffectShadow::~FontEffectShadow()
 {
 }
 
-// Initialise the shadow effect.
 bool FontEffectShadow::Initialise(const Vector2i& _offset)
 {
 	offset = _offset;
 	return true;
 }
 
-// Returns true.
 bool FontEffectShadow::HasUniqueTexture() const
 {
 	return false;
 }
 
-// Resizes and repositions the glyph to fit the outline.
-bool FontEffectShadow::GetGlyphMetrics(Vector2i& origin, Vector2i& ROCKET_UNUSED_PARAMETER(dimensions), const FontGlyph& ROCKET_UNUSED_PARAMETER(glyph)) const
+bool FontEffectShadow::GetGlyphMetrics(Vector2i& origin, Vector2i& RMLUI_UNUSED_PARAMETER(dimensions), const FontGlyph& RMLUI_UNUSED_PARAMETER(glyph)) const
 {
-	ROCKET_UNUSED(dimensions);
-	ROCKET_UNUSED(glyph);
+	RMLUI_UNUSED(dimensions);
+	RMLUI_UNUSED(glyph);
 
 	origin += offset;
 	return true;
+}
+
+
+
+FontEffectShadowInstancer::FontEffectShadowInstancer() : id_offset_x(PropertyId::Invalid), id_offset_y(PropertyId::Invalid), id_color(PropertyId::Invalid)
+{
+	id_offset_x = RegisterProperty("offset-x", "0px", true).AddParser("length").GetId();
+	id_offset_y = RegisterProperty("offset-y", "0px", true).AddParser("length").GetId();
+	id_color = RegisterProperty("color", "white", false).AddParser("color").GetId();
+	RegisterShorthand("offset", "offset-x, offset-y", ShorthandType::FallThrough);
+	RegisterShorthand("font-effect", "offset-x, offset-y, color", ShorthandType::FallThrough);
+}
+
+FontEffectShadowInstancer::~FontEffectShadowInstancer()
+{
+}
+
+SharedPtr<FontEffect> FontEffectShadowInstancer::InstanceFontEffect(const String& RMLUI_UNUSED_PARAMETER(name), const PropertyDictionary& properties)
+{
+	RMLUI_UNUSED(name);
+
+	Vector2i offset;
+	offset.x = Math::RealToInteger(properties.GetProperty(id_offset_x)->Get< float >());
+	offset.y = Math::RealToInteger(properties.GetProperty(id_offset_y)->Get< float >());
+	Colourb color = properties.GetProperty(id_color)->Get< Colourb >();
+
+	auto font_effect = std::make_shared<FontEffectShadow>();
+	if (font_effect->Initialise(offset))
+	{
+		font_effect->SetColour(color);
+		return font_effect;
+	}
+
+	return nullptr;
 }
 
 }

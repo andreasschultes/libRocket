@@ -1,9 +1,10 @@
 /*
- * This source file is part of libRocket, the HTML/CSS Interface Middleware
+ * This source file is part of RmlUi, the HTML/CSS Interface Middleware
  *
- * For the latest information, see http://www.librocket.com
+ * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
+ * Copyright (c) 2019 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,37 +26,35 @@
  *
  */
 
-#ifndef ROCKETCOREELEMENTIMAGE_H
-#define ROCKETCOREELEMENTIMAGE_H
+#ifndef RMLUICOREELEMENTIMAGE_H
+#define RMLUICOREELEMENTIMAGE_H
 
-#include "../../Include/Rocket/Core/Header.h"
-#include "../../Include/Rocket/Core/Element.h"
-#include "../../Include/Rocket/Core/Geometry.h"
-#include "../../Include/Rocket/Core/Texture.h"
+#include "../../Include/RmlUi/Core/Header.h"
+#include "../../Include/RmlUi/Core/Element.h"
+#include "../../Include/RmlUi/Core/Geometry.h"
+#include "../../Include/RmlUi/Core/Texture.h"
 
-namespace Rocket {
+namespace Rml {
 namespace Core {
 
-class TextureResource;
-
 /**
-	The 'img' element. The image element can have a rectangular sub-region of its source texture
-	specified with the 'coords' attribute; the element will render this region rather than the
-	entire image.
+	The 'img' element can render images and sprites. 
 
-	The 'coords' attribute is similar to that of the HTML imagemap. It takes four comma-separated
-	integer values, specifying the top-left and the bottom right of the region in
-	pixel-coordinates, in that order. So for example, the attribute "coords" = "0, 10, 100, 210"
-	will render a 100 x 200 region, beginning at (0, 10) and rendering through to (100, 210). No
-	clamping to the dimensions of the source image will occur; rendered results in this case will
-	depend on the texture addressing mode.
+	The 'src' attribute is used to specify an image url. If instead the `sprite` attribute is set,
+	it will load a sprite and ignore the `src` and `rect` attributes.
+
+	The 'rect' attribute takes four space-separated	integer values, specifying a rectangle
+	using 'x y width height' in pixel coordinates inside the image. No clamping to the
+	dimensions of the source image will occur; rendered results in this case will
+	depend on the user's texture addressing mode.
 
 	The intrinsic dimensions of the image can now come from three different sources. They are
 	used in the following order:
 
 	1) 'width' / 'height' attributes if present
-	2) pixel width / height given by the 'coords' attribute
-	3) width / height of the source texture
+	2) pixel width / height of the sprite 
+	3) pixel width / height given by the 'rect' attribute
+	4) width / height of the image texture
 
 	This has the result of sizing the element to the pixel-size of the rendered image, unless
 	overridden by the 'width' or 'height' attributes.
@@ -63,11 +62,11 @@ class TextureResource;
 	@author Peter Curry
  */
 
-class ROCKETCORE_API ElementImage : public Element
+class RMLUICORE_API ElementImage : public Element
 {
 public:
+	RMLUI_RTTI_DefineWithParent(ElementImage, Element)
 
-	ROCKET_RTTI_DefineWithParent(Element)
 
 	/// Constructs a new ElementImage. This should not be called directly; use the Factory instead.
 	/// @param[in] tag The tag the element was declared as in RML.
@@ -77,27 +76,30 @@ public:
 	/// Returns the element's inherent size.
 	/// @param[out] The element's intrinsic dimensions.
 	/// @return True.
-	bool GetIntrinsicDimensions(Vector2f& dimensions);
+	bool GetIntrinsicDimensions(Vector2f& dimensions) override;
 
 protected:
 	/// Renders the image.
-	virtual void OnRender();
+	void OnRender() override;
+
+	/// Regenerates the element's geometry.
+	void OnResize() override;
 
 	/// Checks for changes to the image's source or dimensions.
 	/// @param[in] changed_attributes A list of attributes changed on the element.
-	virtual void OnAttributeChange(const AttributeNameList& changed_attributes);
+	void OnAttributeChange(const ElementAttributes& changed_attributes) override;
 
-	/// Regenerates the element's geometry on a resize event.
-	/// @param[in] event The event to process.
-	virtual void ProcessEvent(Event& event);
+	/// Called when properties on the element are changed.
+	/// @param[in] changed_properties The properties changed on the element.
+	void OnPropertyChange(const PropertyIdSet& changed_properties) override;
 
 private:
 	// Generates the element's geometry.
 	void GenerateGeometry();
 	// Loads the element's texture, as specified by the 'src' attribute.
 	bool LoadTexture();
-	// Resets the values of the 'coords' attribute to mark them as unused.
-	void ResetCoords();
+	// Loads the rect value from the element's attribute, but only if we're not a sprite.
+	void UpdateRect();
 
 	// The texture this element is rendering from.
 	Texture texture;
@@ -107,10 +109,10 @@ private:
 	// that dimension has not been computed yet.
 	Vector2f dimensions;
 
-	// The integer coords extracted from the 'coords' attribute. using_coords will be false if
+	// The rectangle extracted from the sprite or 'rect' attribute. The rect_source will be None if
 	// these have not been specified or are invalid.
-	int coords[4];
-	bool using_coords;
+	Rectangle rect;
+	enum class RectSource { None, Attribute, Sprite } rect_source;
 
 	// The geometry used to render this element.
 	Geometry geometry;

@@ -1,9 +1,10 @@
 /*
- * This source file is part of libRocket, the HTML/CSS Interface Middleware
+ * This source file is part of RmlUi, the HTML/CSS Interface Middleware
  *
- * For the latest information, see http://www.librocket.com
+ * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
+ * Copyright (c) 2019 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,15 +26,14 @@
  *
  */
 
-#ifndef ROCKETCONTROLSWIDGETTEXTINPUT_H
-#define ROCKETCONTROLSWIDGETTEXTINPUT_H
+#ifndef RMLUICONTROLSWIDGETTEXTINPUT_H
+#define RMLUICONTROLSWIDGETTEXTINPUT_H
 
-#include "../../Include/Rocket/Core/EventListener.h"
-#include "../../Include/Rocket/Core/Geometry.h"
-#include "../../Include/Rocket/Core/WString.h"
-#include "../../Include/Rocket/Core/Vertex.h"
+#include "../../Include/RmlUi/Core/EventListener.h"
+#include "../../Include/RmlUi/Core/Geometry.h"
+#include "../../Include/RmlUi/Core/Vertex.h"
 
-namespace Rocket {
+namespace Rml {
 namespace Core {
 
 class ElementText;
@@ -66,6 +66,8 @@ public:
 	/// Returns the maximum length (in characters) of this text field.
 	/// @return The maximum number of characters allowed in this text field.
 	int GetMaxLength() const;
+	/// Returns the current length (in characters) of this text field.
+	int GetLength() const;
 
 	/// Update the colours of the selected text.
 	void UpdateSelectionColours();
@@ -76,29 +78,33 @@ public:
 	void OnRender();
 	/// Formats the widget's internal content.
 	void OnLayout();
+	/// Called when the parent element's size changes.
+	void OnResize();
 
 	/// Returns the input element's underlying text element.
 	Core::ElementText* GetTextElement();
 	/// Returns the input element's maximum allowed text dimensions.
-	const Rocket::Core::Vector2f& GetTextDimensions() const;
+	const Rml::Core::Vector2f& GetTextDimensions() const;
 
 protected:
+	enum class CursorMovement { Begin = -4, BeginLine = -3, PreviousWord = -2, Left = -1, Right = 1, NextWord = 2, EndLine = 3, End = 4 };
+
 	/// Processes the "keydown" and "textinput" event to write to the input field, and the "focus" and
 	/// "blur" to set the state of the cursor.
-	virtual void ProcessEvent(Core::Event& event);
+	void ProcessEvent(Core::Event& event) override;
 
-	/// Adds a new character to the string at the cursor position.
-	/// @param[in] character The character to add to the string.
-	/// @return True if the character was successfully added, false otherwise.
-	bool AddCharacter(Rocket::Core::word character);
-	/// Deletes a character from the string.
-	/// @param[in] backward True to delete a character behind the cursor, false for in front of the cursor.
+	/// Adds new characters to the string at the cursor position.
+	/// @param[in] string The characters to add.
+	/// @return True if at least one character was successfully added, false otherwise.
+	bool AddCharacters(Core::String string);
+	/// Deletes characters from the string.
+	/// @param[in] direction Movement of cursor for deletion.
 	/// @return True if a character was deleted, false otherwise.
-	bool DeleteCharacter(bool back);
+	bool DeleteCharacters(CursorMovement direction);
 	/// Returns true if the given character is permitted in the input field, false if not.
 	/// @param[in] character The character to validate.
 	/// @return True if the character is allowed, false if not.
-	virtual bool IsCharacterValid(Rocket::Core::word character) = 0;
+	virtual bool IsCharacterValid(char character) = 0;
 	/// Called when the user pressed enter.
 	virtual void LineBreak() = 0;
 
@@ -106,20 +112,26 @@ protected:
 	int GetCursorIndex() const;
 
 	/// Gets the parent element containing the widget.
-	Core::Element* GetElement();
+	Core::Element* GetElement() const;
 
 	/// Dispatches a change event to the widget's element.
 	void DispatchChangeEvent(bool linebreak = false);
 
 private:
+	
 	/// Moves the cursor along the current line.
-	/// @param[in] x How far to move the cursor.
+	/// @param[in] movement Cursor movement operation.
 	/// @param[in] select True if the movement will also move the selection cursor, false if not.
-	void MoveCursorHorizontal(int distance, bool select);
+	void MoveCursorHorizontal(CursorMovement movement, bool select);
 	/// Moves the cursor up and down the text field.
 	/// @param[in] x How far to move the cursor.
 	/// @param[in] select True if the movement will also move the selection cursor, false if not.
 	void MoveCursorVertical(int distance, bool select);
+	// Move the cursor to utf-8 boundaries, in case it was moved into the middle of a multibyte character.
+	/// @param[in] forward True to seek forward, else back.
+	void MoveCursorToCharacterBoundaries(bool forward);
+	// Expands the cursor, selecting the current word or nearby whitespace.
+	void ExpandSelection();
 
 	/// Updates the absolute cursor index from the relative cursor indices.
 	void UpdateAbsoluteCursor();
@@ -133,6 +145,7 @@ private:
 	/// Calculates the character index along a line under a specific horizontal position.
 	/// @param[in] line_index The line to query.
 	/// @param[in] position The position to query.
+	/// @param[out] on_right_side True if position is on the right side of the returned character, else left side.
 	/// @return The index of the character under the mouse cursor.
 	int CalculateCharacterIndex(int line_index, float position);
 
@@ -145,7 +158,7 @@ private:
 	void FormatElement();
 	/// Formats the input element's text field.
 	/// @return The content area of the element.
-	Rocket::Core::Vector2f FormatText();
+	Rml::Core::Vector2f FormatText();
 
 	/// Generates the text cursor.
 	void GenerateCursor();
@@ -168,12 +181,12 @@ private:
 	/// @param[out] post_selection The section of unselected text after any selected text on the line. If there is no selection on the line, then this will be empty.
 	/// @param[in] line The text making up the line.
 	/// @param[in] line_begin The absolute index at the beginning of the line.
-	void GetLineSelection(Core::WString& pre_selection, Core::WString& selection, Core::WString& post_selection, const Core::WString& line, int line_begin);
+	void GetLineSelection(Core::String& pre_selection, Core::String& selection, Core::String& post_selection, const Core::String& line, int line_begin);
 
 	struct Line
 	{
 		// The contents of the line (including the trailing endline, if that terminated the line).
-		Core::WString content;
+		Core::String content;
 		// The length of the editable characters on the line (excluding any trailing endline).
 		int content_length;
 
@@ -186,19 +199,24 @@ private:
 
 	Core::ElementText* text_element;
 	Core::ElementText* selected_text_element;
-	Rocket::Core::Vector2f internal_dimensions;
-	Rocket::Core::Vector2f scroll_offset;
+	Rml::Core::Vector2f internal_dimensions;
+	Rml::Core::Vector2f scroll_offset;
 
 	typedef std::vector< Line > LineList;
 	LineList lines;
 
+	// Length in number of characters.
 	int max_length;
 
+	// Indices in bytes: Should always be moved along UTF-8 start bytes.
 	int edit_index;
-
+	
 	int absolute_cursor_index;
 	int cursor_line_index;
 	int cursor_character_index;
+
+	bool cursor_on_right_side_of_character;
+	bool cancel_next_drag;
 
 	// Selection. The start and end indices of the selection are in absolute coordinates.
 	Core::Element* selection_element;
@@ -207,7 +225,7 @@ private:
 	int selection_length;
 
 	// The colour of the background of selected text.
-	Rocket::Core::Colourb selection_colour;
+	Rml::Core::Colourb selection_colour;
 	// The selection background.
 	Core::Geometry selection_geometry;
 
@@ -219,12 +237,12 @@ private:
 	/// @param[in] active True if need activate keyboard, false if need deactivate.
 	void SetKeyboardActive(bool active);
 
-	float last_update_time;
+	double last_update_time;
 
 	// The cursor geometry.
 	float ideal_cursor_position;
-	Rocket::Core::Vector2f cursor_position;
-	Rocket::Core::Vector2f cursor_size;
+	Rml::Core::Vector2f cursor_position;
+	Rml::Core::Vector2f cursor_size;
 	Core::Geometry cursor_geometry;
 };
 

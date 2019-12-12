@@ -1,11 +1,24 @@
-# Ignore compiled python code
-*.pyc
+# Primary CMake build target
+/Build/
+
+# Other common build targets
+/build/
+/Bin/
+/bin/
+/Lib/
+/lib/
+
+# Distribution target
+/Distribution/
+
 # Ignore MacOSX directory info
 .DS_Store
+
 # VS user project files
+.vs/
 *.suo
 *.user
 *.opensdf
-bin/*
-
-/lib/
+*.dir/
+Win32/
+x64/

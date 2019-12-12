@@ -1,9 +1,10 @@
 /*
- * This source file is part of libRocket, the HTML/CSS Interface Middleware
+ * This source file is part of RmlUi, the HTML/CSS Interface Middleware
  *
- * For the latest information, see http://www.librocket.com
+ * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
+ * Copyright (c) 2019 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,28 +29,24 @@
 #include "precompiled.h"
 #include "FontEffectOutline.h"
 
-namespace Rocket {
+namespace Rml {
 namespace Core {
 
 FontEffectOutline::FontEffectOutline()
 {
 	width = 0;
-
-	// Default the z-index of an outline effect to be behind the main layer.
-	SetZIndex(-1);
+	SetLayer(Layer::Back);
 }
 
 FontEffectOutline::~FontEffectOutline()
 {
 }
 
-// Returns true.
 bool FontEffectOutline::HasUniqueTexture() const
 {
 	return true;
 }
 
-// Initialise the outline effect.
 bool FontEffectOutline::Initialise(int _width)
 {
 	if (_width <= 0)
@@ -57,7 +54,7 @@ bool FontEffectOutline::Initialise(int _width)
 
 	width = _width;
 
-	filter.Initialise(width, ConvolutionFilter::DILATION);
+	filter.Initialise(width, FilterOperation::Dilation);
 	for (int x = -width; x <= width; ++x)
 	{
 		for (int y = -width; y <= width; ++y)
@@ -78,18 +75,17 @@ bool FontEffectOutline::Initialise(int _width)
 	return true;
 }
 
-// Resizes and repositions the glyph to fit the outline.
-bool FontEffectOutline::GetGlyphMetrics(Vector2i& origin, Vector2i& dimensions, const FontGlyph& ROCKET_UNUSED_PARAMETER(glyph)) const
+bool FontEffectOutline::GetGlyphMetrics(Vector2i& origin, Vector2i& dimensions, const FontGlyph& RMLUI_UNUSED_PARAMETER(glyph)) const
 {
-	ROCKET_UNUSED(glyph);
+	RMLUI_UNUSED(glyph);
 
 	if (dimensions.x * dimensions.y > 0)
 	{
 		origin.x -= width;
 		origin.y -= width;
 
-		dimensions.x += width;
-		dimensions.y += width;
+		dimensions.x += 2 * width;
+		dimensions.y += 2 * width;
 
 		return true;
 	}
@@ -97,10 +93,39 @@ bool FontEffectOutline::GetGlyphMetrics(Vector2i& origin, Vector2i& dimensions, 
 	return false;
 }
 
-// Expands the original glyph texture for the outline.
-void FontEffectOutline::GenerateGlyphTexture(byte* destination_data, const Vector2i& destination_dimensions, int destination_stride, const FontGlyph& glyph) const
+void FontEffectOutline::GenerateGlyphTexture(byte* destination_data, const Vector2i destination_dimensions, int destination_stride, const FontGlyph& glyph) const
 {
-	filter.Run(destination_data, destination_dimensions, destination_stride, glyph.bitmap_data, glyph.bitmap_dimensions, Vector2i(width, width));
+	filter.Run(destination_data, destination_dimensions, destination_stride, ColorFormat::RGBA8, glyph.bitmap_data, glyph.bitmap_dimensions, Vector2i(width));
+}
+
+
+
+FontEffectOutlineInstancer::FontEffectOutlineInstancer() : id_width(PropertyId::Invalid), id_color(PropertyId::Invalid)
+{
+	id_width = RegisterProperty("width", "1px", true).AddParser("length").GetId();
+	id_color = RegisterProperty("color", "white", false).AddParser("color").GetId();
+	RegisterShorthand("font-effect", "width, color", ShorthandType::FallThrough);
+}
+
+FontEffectOutlineInstancer::~FontEffectOutlineInstancer()
+{
+}
+
+SharedPtr<FontEffect> FontEffectOutlineInstancer::InstanceFontEffect(const String& RMLUI_UNUSED_PARAMETER(name), const PropertyDictionary& properties)
+{
+	RMLUI_UNUSED(name);
+
+	float width = properties.GetProperty(id_width)->Get< float >();
+	Colourb color = properties.GetProperty(id_color)->Get< Colourb >();
+
+	auto font_effect = std::make_shared<FontEffectOutline>();
+	if (font_effect->Initialise(Math::RealToInteger(width)))
+	{
+		font_effect->SetColour(color);
+		return font_effect;
+	}
+
+	return nullptr;
 }
 
 }
