@@ -29,7 +29,6 @@
 #ifndef RMLUICOREPLATFORM_H
 #define RMLUICOREPLATFORM_H
 
-#include "Config.h"
 
 #if defined __WIN32__ || defined _WIN32
 	#define RMLUI_PLATFORM_WIN32
